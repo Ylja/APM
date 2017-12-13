@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?><process version="7.6.001">
+  <context>
+    <input/>
+    <output/>
+    <macros/>
+  </context>
+  <operator activated="true" class="process" compatibility="6.0.002" expanded="true" name="Process">
+    <parameter key="logverbosity" value="init"/>
+    <parameter key="random_seed" value="2001"/>
+    <parameter key="send_mail" value="never"/>
+    <parameter key="notification_email" value=""/>
+    <parameter key="process_duration_for_mail" value="30"/>
+    <parameter key="encoding" value="SYSTEM"/>
+    <process expanded="true">
+      <operator activated="true" class="rapidprom:import_xlog" compatibility="4.0.001" expanded="true" height="68" name="Import Event Log" width="90" x="45" y="34">
+        <parameter key="file" value="/home/ylja/Uni/master1/process mining/APM_Assignment_1.xes"/>
+        <parameter key="importer" value="Lightweight &amp; Sequential IDs"/>
+      </operator>
+      <operator activated="true" class="loop_parameters" compatibility="6.0.003" expanded="true" height="124" name="Loop Parameters" width="90" x="246" y="34">
+        <list key="parameters">
+          <parameter key="ILP Miner (Petri Net).filter_threshold" value="[0.0;0.5;5;linear]"/>
+        </list>
+        <parameter key="error_handling" value="fail on error"/>
+        <parameter key="synchronize" value="false"/>
+        <process expanded="true">
+          <operator activated="true" class="multiply" compatibility="7.6.001" expanded="true" height="103" name="Multiply" width="90" x="45" y="34"/>
+          <operator activated="true" class="rapidprom:ilp_miner" compatibility="4.0.001" expanded="true" height="68" name="ILP Miner (Petri Net)" width="90" x="246" y="34">
+            <parameter key="event_classifier" value="(Event Name AND Lifecycle transition)"/>
+            <parameter key="enforce_emptiness_after_completion" value="false"/>
+            <parameter key="filter" value="Sequence Encoding Filter"/>
+            <parameter key="filter_threshold" value="0.5"/>
+          </operator>
+          <operator activated="true" class="multiply" compatibility="7.6.001" expanded="true" height="103" name="Multiply (2)" width="90" x="447" y="34"/>
+          <operator activated="true" class="rapidprom:replay_a_log_on_petri_net_for_conformance_analysis" compatibility="4.0.001" expanded="true" height="145" name="Conformance Checking" width="90" x="514" y="238">
+            <parameter key="event_classifier" value="(Event Name)"/>
+            <parameter key="Replay Algorithm" value="ILP Replayer"/>
+            <parameter key="Max Explored States (in Thousands)" value="200"/>
+            <parameter key="Timeout (sec)" value="60"/>
+            <parameter key="Number of Threads" value="4"/>
+          </operator>
+          <operator activated="true" class="extract_log_value" compatibility="7.6.001" expanded="true" height="68" name="Extract Log Value" width="90" x="715" y="289">
+            <parameter key="attribute_name" value="Value"/>
+            <parameter key="example_index" value="1"/>
+          </operator>
+          <operator activated="true" class="log" compatibility="7.6.001" expanded="true" height="82" name="Log" width="90" x="849" y="289">
+            <list key="log">
+              <parameter key="Replay Fitness" value="operator.Extract Log Value.value.data_value"/>
+              <parameter key="Parameter value" value="operator.ILP Miner (Petri Net).parameter.filter_threshold"/>
+            </list>
+            <parameter key="sorting_type" value="none"/>
+            <parameter key="sorting_k" value="100"/>
+            <parameter key="persistent" value="false"/>
+          </operator>
+          <connect from_port="input 1" to_op="Multiply" to_port="input"/>
+          <connect from_op="Multiply" from_port="output 1" to_op="ILP Miner (Petri Net)" to_port="event log (ProM Event Log)"/>
+          <connect from_op="Multiply" from_port="output 2" to_op="Conformance Checking" to_port="event log (ProM Event Log)"/>
+          <connect from_op="ILP Miner (Petri Net)" from_port="model (ProM Petri Net)" to_op="Multiply (2)" to_port="input"/>
+          <connect from_op="Multiply (2)" from_port="output 1" to_op="Conformance Checking" to_port="model (ProM Petri Net)"/>
+          <connect from_op="Multiply (2)" from_port="output 2" to_port="result 1"/>
+          <connect from_op="Conformance Checking" from_port="alignments (ProM PNRepResult)" to_port="result 2"/>
+          <connect from_op="Conformance Checking" from_port="example set with metrics (Data Table)" to_op="Extract Log Value" to_port="example set"/>
+          <connect from_op="Extract Log Value" from_port="example set" to_op="Log" to_port="through 1"/>
+          <portSpacing port="source_input 1" spacing="0"/>
+          <portSpacing port="source_input 2" spacing="0"/>
+          <portSpacing port="sink_performance" spacing="0"/>
+          <portSpacing port="sink_result 1" spacing="0"/>
+          <portSpacing port="sink_result 2" spacing="0"/>
+          <portSpacing port="sink_result 3" spacing="0"/>
+          <portSpacing port="sink_result 4" spacing="0"/>
+          <description align="center" color="yellow" colored="false" height="105" resized="false" width="180" x="16" y="148">Event log is input, but is needed by multiple operators, so multiply the object.</description>
+          <description align="center" color="yellow" colored="false" height="124" resized="true" width="240" x="710" y="378">Extracts a specific value from the exampleSet and allows it to be logged by the Log operator to the internal log without a name.&lt;br/&gt;See the settings of the Log operator set the values to log.</description>
+        </process>
+      </operator>
+      <operator activated="true" class="log_to_data" compatibility="7.6.001" expanded="true" height="103" name="Log to Data" width="90" x="447" y="136"/>
+      <operator activated="true" class="write_excel" compatibility="7.6.001" expanded="true" height="82" name="Write Excel" width="90" x="648" y="136">
+        <parameter key="excel_file" value="/home/ylja/Uni/master1/process mining/demoProcessOutput.xlsx"/>
+        <parameter key="file_format" value="xlsx"/>
+        <parameter key="encoding" value="SYSTEM"/>
+        <parameter key="sheet_name" value="RapidMiner Data"/>
+        <parameter key="date_format" value="yyyy-MM-dd HH:mm:ss"/>
+        <parameter key="number_format" value="#.0"/>
+      </operator>
+      <connect from_op="Import Event Log" from_port="output" to_op="Loop Parameters" to_port="input 1"/>
+      <connect from_op="Loop Parameters" from_port="result 1" to_port="result 1"/>
+      <connect from_op="Loop Parameters" from_port="result 2" to_port="result 2"/>
+      <connect from_op="Loop Parameters" from_port="result 3" to_op="Log to Data" to_port="through 1"/>
+      <connect from_op="Log to Data" from_port="exampleSet" to_op="Write Excel" to_port="input"/>
+      <connect from_op="Write Excel" from_port="through" to_port="result 3"/>
+      <portSpacing port="source_input 1" spacing="0"/>
+      <portSpacing port="sink_result 1" spacing="0"/>
+      <portSpacing port="sink_result 2" spacing="0"/>
+      <portSpacing port="sink_result 3" spacing="0"/>
+      <portSpacing port="sink_result 4" spacing="0"/>
+      <description align="center" color="yellow" colored="false" height="105" resized="false" width="180" x="10" y="146">Update event log location to your file location</description>
+      <description align="center" color="yellow" colored="false" height="105" resized="false" width="180" x="216" y="173">Tries different parameter settings of the ILP miner.&lt;br/&gt;Double click to see subprocess.</description>
+      <description align="center" color="yellow" colored="false" height="105" resized="false" width="180" x="420" y="252">Converts the logged data to an ExampleSet</description>
+      <description align="center" color="yellow" colored="false" height="105" resized="false" width="180" x="626" y="254">Converts ExampleSet to Excel file for further analysis</description>
+      <description align="center" color="yellow" colored="false" height="105" resized="false" width="180" x="862" y="184">Top right: output objects RapidMiner will visualize when workflow is finished.</description>
+    </process>
+  </operator>
+</process>

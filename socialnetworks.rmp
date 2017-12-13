@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?><process version="7.6.002">
+  <context>
+    <input/>
+    <output/>
+    <macros/>
+  </context>
+  <operator activated="true" class="process" compatibility="7.6.002" expanded="true" name="Process">
+    <parameter key="logverbosity" value="init"/>
+    <parameter key="random_seed" value="2001"/>
+    <parameter key="send_mail" value="never"/>
+    <parameter key="notification_email" value=""/>
+    <parameter key="process_duration_for_mail" value="30"/>
+    <parameter key="encoding" value="SYSTEM"/>
+    <process expanded="true">
+      <operator activated="true" class="rapidprom:import_xlog" compatibility="4.0.001" expanded="true" height="68" name="Import Event Log" width="90" x="45" y="34">
+        <parameter key="file" value="/home/ylja/Uni/master1/process mining/APM_Assignment_1.xes"/>
+        <parameter key="importer" value="Naive"/>
+      </operator>
+      <operator activated="true" class="loop_parameters" compatibility="7.6.002" expanded="true" height="82" name="Loop Parameters" width="90" x="179" y="34">
+        <list key="parameters">
+          <parameter key="Social Network Miner (Social Network).Analysis variation" value="Working together,Reassignment,Subcontracting,Handover of work"/>
+        </list>
+        <parameter key="error_handling" value="fail on error"/>
+        <parameter key="synchronize" value="false"/>
+        <process expanded="true">
+          <operator activated="true" class="rapidprom:social_network_miner" compatibility="4.0.001" expanded="true" height="68" name="Social Network Miner (Social Network)" width="90" x="112" y="34">
+            <parameter key="event_classifier" value="(Event Name AND Lifecycle transition)"/>
+            <parameter key="Analysis variation" value="Handover of work"/>
+          </operator>
+          <connect from_port="input 1" to_op="Social Network Miner (Social Network)" to_port="event log (ProM Event Log)"/>
+          <connect from_op="Social Network Miner (Social Network)" from_port="model (ProM Social Network)" to_port="result 1"/>
+          <portSpacing port="source_input 1" spacing="0"/>
+          <portSpacing port="source_input 2" spacing="0"/>
+          <portSpacing port="sink_performance" spacing="0"/>
+          <portSpacing port="sink_result 1" spacing="0"/>
+          <portSpacing port="sink_result 2" spacing="0"/>
+        </process>
+      </operator>
+      <connect from_op="Import Event Log" from_port="output" to_op="Loop Parameters" to_port="input 1"/>
+      <connect from_op="Loop Parameters" from_port="result 1" to_port="result 1"/>
+      <portSpacing port="source_input 1" spacing="0"/>
+      <portSpacing port="sink_result 1" spacing="0"/>
+      <portSpacing port="sink_result 2" spacing="0"/>
+    </process>
+  </operator>
+</process>
